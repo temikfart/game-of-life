@@ -1,7 +1,7 @@
 #include "main.hpp"
 
 int main() {
-    std::cout << "Hello, world" << std::endl;
+    gol::GameOfLife(GRID_WIDTH, GRID_HEIGHT).run();
 
     return 0;
 }

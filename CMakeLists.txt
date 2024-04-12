@@ -16,6 +16,8 @@ include_directories(include)
 
 add_executable(game_of_life
         src/main.cpp
+        src/window.cpp
+        src/game_of_life.cpp
 )
 target_link_libraries(game_of_life PRIVATE
         sfml-graphics

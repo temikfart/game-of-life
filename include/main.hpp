@@ -1,3 +1,3 @@
 #pragma once
 
-#include <iostream>
+#include "game_of_life.hpp"
