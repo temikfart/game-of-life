@@ -17,11 +17,24 @@ constexpr int kFrequency = 3;
 
 class GameOfLife {
 public:
-    struct Cell {
+    class Generation {
     public:
-        bool alive = false;
-    };
+        struct Cell {
+            bool alive = false;
+        };
 
+        int width;
+        int height;
+
+        explicit Generation(int width, int height);
+
+        const Cell& cell(int x, int y) const;
+        void setState(int x, int y, bool alive);
+        void setRandomStates();
+
+    private:
+        std::vector<std::vector<Cell>> gen_;
+    };
 
     GameOfLife();
 
@@ -29,22 +42,22 @@ public:
 
 private:
     Window window_;
-    std::vector<std::vector<Cell>> curr_gen_;
-    std::vector<std::vector<Cell>> next_gen_;
+    Generation curr_gen_;
+    Generation next_gen_;
 
     void calcNextGen();
-    bool isCellAliveInCurrGen(int x, int y);
-    int calcAliveNeighborCount(int x, int y);
-    inline bool underpopulation(int alive_neighbor_count) {
+    bool isCellAliveInCurrGen(int x, int y) const;
+    int calcAliveNeighborCount(int x, int y) const;
+    static inline bool underpopulation(int alive_neighbor_count) {
         return alive_neighbor_count < 2;
     }
-    inline bool nextGeneration(int alive_neighbor_count) {
+    static inline bool nextGeneration(int alive_neighbor_count) {
         return alive_neighbor_count == 2 || alive_neighbor_count == 3;
     }
-    inline bool overpopulation(int alive_neighbor_count) {
+    static inline bool overpopulation(int alive_neighbor_count) {
         return alive_neighbor_count > 3;
     }
-    inline bool reproduction(int alive_neighbor_count) {
+    static inline bool reproduction(int alive_neighbor_count) {
         return alive_neighbor_count == 3;
     }
     void drawNextGen();
