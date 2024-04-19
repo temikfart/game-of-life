@@ -2,76 +2,71 @@
 
 namespace gol {
 
-GameOfLife::GameOfLife(int gridWidth, int gridHeight)
-    : window(gridWidth, gridHeight) {}
-
-int GameOfLife::app() {
-    bool gen1[GRID_WIDTH * GRID_HEIGHT];
-    bool gen2[GRID_WIDTH * GRID_HEIGHT];
-    bool *prevGen = gen1;
-    bool *nextGen = gen2;
-    randomGen(prevGen, 3);
-    while (true) {
-        calcGen(prevGen, nextGen);
-        drawGen(nextGen);
-        swap(prevGen, nextGen);
-        window.flushWindow();
-    }
-    return 0;
-}
-
-bool GameOfLife::closeWindowEvent() {
-    return window.closeWindowEvent();
-}
-void GameOfLife::randomGen(bool *gen, int freq) {
-    for (int y = 0; y < GRID_HEIGHT; y++) {
-        for (int x = 0; x < GRID_WIDTH; ++x) {
-            gen[y * GRID_WIDTH + x] = ((window.randInt() % freq) == 0);
+GameOfLife::GameOfLife()
+    : window_(kWidth, kHeight, kCellSize),
+      curr_gen_(kHeight, std::vector<Cell>(kWidth)),
+      next_gen_(kHeight, std::vector<Cell>(kWidth)) {
+    for (auto& line : curr_gen_) {
+        for (auto& cell : line) {
+            cell.alive = (utils::randInt() % kFrequency) == 0;
         }
     }
 }
-void GameOfLife::drawGen(const bool *gen) {
-    for (int y = 0; y < GRID_HEIGHT; y++) {
-        for (int x = 0; x < GRID_WIDTH; ++x) {
-            if (gen[y * GRID_WIDTH + x]) {
-                window.setCell(x, y);
+
+void GameOfLife::run() {
+    while (!window_.closed()) {
+        calcNextGen();
+        drawNextGen();
+        std::swap(curr_gen_, next_gen_);
+        window_.flushWindow();
+    }
+}
+void GameOfLife::calcNextGen() {
+    for (int y = 0; y < kHeight; y++) {
+        for (int x = 0; x < kWidth; x++) {
+            next_gen_[y][x].alive = isCellAliveInCurrGen(x, y);
+        }
+    }
+}
+bool GameOfLife::isCellAliveInCurrGen(int x, int y) {
+    Cell& cell = curr_gen_[y][x];
+    int alive_neighbors_count = calcAliveNeighborCount(x, y);
+    if (cell.alive) {
+        if (underpopulation(alive_neighbors_count) || overpopulation(alive_neighbors_count)) {
+            return false;
+        }
+        if (nextGeneration(alive_neighbors_count)) {
+            return true;
+        }
+    }
+    return reproduction(alive_neighbors_count);
+}
+int GameOfLife::calcAliveNeighborCount(int x, int y) {
+    int count = 0;
+    for (int dx = -1; dx <= 1; dx++) {
+        for (int dy = -1; dy <= 1; dy++) {
+            if (dx == 0 && dy == 0)
+                continue;
+
+            int nx = x + dx;
+            int ny = y + dy;
+            if (nx >= 0 && nx < kWidth && ny >= 0 && ny < kHeight) {
+                if (curr_gen_[ny][nx].alive) {
+                    count++;
+                }
             }
         }
     }
+    return count;
 }
-void GameOfLife::calcGen(const bool *prevGen, bool *nextGen) {
-    for (int y = 0; y < GRID_HEIGHT; ++y) {
-        for (int x = 0; x < GRID_WIDTH; ++x) {
-            nextGen[y * GRID_WIDTH + x] = isCellAlive(x, y, prevGen);
+void GameOfLife::drawNextGen() {
+    for (int y = 0; y < kHeight; y++) {
+        for (int x = 0; x < kWidth; x++) {
+            if (next_gen_[y][x].alive) {
+                window_.paintCell(x, y);
+            }
         }
     }
-}
-bool GameOfLife::isCellAlive(int x, int y, const bool *prevGen) {
-    int neighborSum = 0;
-    for (int i = x - 1; i <= x + 1; ++i) {
-        for (int j = y - 1; j <= y + 1; ++j) {
-            int xi = wrapValue(i, GRID_WIDTH);
-            int yj = wrapValue(j, GRID_HEIGHT);
-            neighborSum += prevGen[yj * GRID_WIDTH + xi];
-        }
-    }
-    int currentPos = y * GRID_WIDTH + x;
-    neighborSum -= prevGen[currentPos];
-    if (prevGen[currentPos] && (neighborSum == 2 || neighborSum == 3))
-        return true;
-    if (!prevGen[currentPos] && neighborSum == 3)
-        return true;
-    return false;
-}
-int GameOfLife::wrapValue(int v, int maxValue) {
-    if (v == -1) return maxValue - 1;
-    if (v == maxValue) return 0;
-    return v;
-}
-void GameOfLife::swap(bool *&prevGen, bool *&nextGen) {
-    bool *tmp = prevGen;
-    prevGen = nextGen;
-    nextGen = tmp;
 }
 
 } // gol

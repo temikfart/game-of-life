@@ -1,27 +1,53 @@
 #pragma once
 
+#include <algorithm>
+#include <limits>
+#include <random>
+#include <vector>
+
 #include "window.hpp"
 
-#define GRID_HEIGHT (300)
-#define GRID_WIDTH (300)
+#include "utils.hpp"
 
 namespace gol {
 
+constexpr int kWidth = 300;
+constexpr int kHeight = 300;
+constexpr int kFrequency = 3;
+
 class GameOfLife {
 public:
-    GameOfLife(int gridWidth, int gridHeight);
+    struct Cell {
+    public:
+        bool alive = false;
+    };
 
-    int app();
-    bool closeWindowEvent();
-    void randomGen(bool *gen, int freq);
-    void drawGen(const bool *gen);
-    void calcGen(const bool *prevGen, bool *nextGen);
-    bool isCellAlive(int x, int y, const bool *prevGen);
-    int wrapValue(int v, int maxValue);
-    void swap(bool *&prevGen, bool *&nextGen);
+
+    GameOfLife();
+
+    void run();
 
 private:
-    Window window;
+    Window window_;
+    std::vector<std::vector<Cell>> curr_gen_;
+    std::vector<std::vector<Cell>> next_gen_;
+
+    void calcNextGen();
+    bool isCellAliveInCurrGen(int x, int y);
+    int calcAliveNeighborCount(int x, int y);
+    inline bool underpopulation(int alive_neighbor_count) {
+        return alive_neighbor_count < 2;
+    }
+    inline bool nextGeneration(int alive_neighbor_count) {
+        return alive_neighbor_count == 2 || alive_neighbor_count == 3;
+    }
+    inline bool overpopulation(int alive_neighbor_count) {
+        return alive_neighbor_count > 3;
+    }
+    inline bool reproduction(int alive_neighbor_count) {
+        return alive_neighbor_count == 3;
+    }
+    void drawNextGen();
 };
 
 } // gol
