@@ -15,10 +15,12 @@ FetchContent_MakeAvailable(SFML)
 include_directories(include)
 
 add_executable(game_of_life
-        src/main.cpp
-        src/window.cpp
         src/game_of_life.cpp
+        src/generation.cpp
+        src/generation_saver.cpp
+        src/main.cpp
         src/utils.cpp
+        src/window.cpp
 )
 target_link_libraries(game_of_life PRIVATE
         sfml-graphics

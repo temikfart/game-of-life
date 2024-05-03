@@ -6,42 +6,24 @@
 #include <random>
 #include <vector>
 
-#include "window.hpp"
-
+#include "generation.hpp"
+#include "generation_saver.hpp"
 #include "utils.hpp"
+#include "window.hpp"
 
 namespace gol {
 
 constexpr int kWidth = 300;
 constexpr int kHeight = 300;
-constexpr int kFrequency = 3;
 
 class GameOfLife {
 public:
-    class Generation {
-    public:
-        struct Cell {
-            bool alive = false;
-        };
-
-        int width;
-        int height;
-
-        explicit Generation(int width, int height);
-
-        const Cell& cell(int x, int y) const;
-        void setState(int x, int y, bool alive);
-        void setRandomStates();
-
-    private:
-        std::vector<std::vector<Cell>> gen_;
-    };
-
     GameOfLife();
 
     void run(int gen_count);
 
 private:
+    static int id_;
     Window window_;
     Generation curr_gen_;
     Generation next_gen_;
@@ -62,6 +44,9 @@ private:
         return alive_neighbor_count == 3;
     }
     void drawNextGen();
+
+    void saveStartState() const;
+    void saveFinalState() const;
 };
 
 } // gol

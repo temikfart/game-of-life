@@ -2,31 +2,15 @@
 
 namespace gol {
 
-using Generation = GameOfLife::Generation;
-using Cell = GameOfLife::Generation::Cell;
-
-GameOfLife::Generation::Generation(int width, int height)
-    : width(width), height(height), gen_(height, std::vector<Cell>(width)) {}
-
-const Cell& Generation::cell(int x, int y) const {
-    return gen_[y][x];
-}
-void Generation::setState(int x, int y, bool alive) {
-    gen_[y][x].alive = alive;
-}
-void Generation::setRandomStates() {
-    for (auto& line : gen_) {
-        for (auto& cell : line) {
-            cell.alive = (utils::randInt() % kFrequency) == 0;
-        }
-    }
-}
+int GameOfLife::id_ = 0;
 
 GameOfLife::GameOfLife()
     : window_(kWidth, kHeight, kCellSize),
       curr_gen_(kWidth, kHeight),
       next_gen_(kWidth, kHeight) {
+    id_++;
     curr_gen_.setRandomStates();
+    GenerationSaver::saveStartState(id_, curr_gen_);
 }
 
 void GameOfLife::run(int gen_count) {
@@ -40,6 +24,7 @@ void GameOfLife::run(int gen_count) {
         window_.flushWindow();
         gen_num++;
     }
+    GenerationSaver::saveFinalState(id_, curr_gen_);
 }
 void GameOfLife::calcNextGen() {
     for (int y = 0; y < next_gen_.height; y++) {
