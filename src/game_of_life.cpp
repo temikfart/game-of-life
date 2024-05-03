@@ -29,12 +29,16 @@ GameOfLife::GameOfLife()
     curr_gen_.setRandomStates();
 }
 
-void GameOfLife::run() {
-    while (!window_.closed()) {
+void GameOfLife::run(int gen_count) {
+    int gen_num = 0;
+    while (!window_.closed() && gen_num < gen_count) {
+        if (gen_num % 50 == 0)
+            std::cout << "Generation #" << gen_num << std::endl;
         calcNextGen();
         drawNextGen();
         std::swap(curr_gen_, next_gen_);
         window_.flushWindow();
+        gen_num++;
     }
 }
 void GameOfLife::calcNextGen() {

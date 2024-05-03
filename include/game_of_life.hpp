@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <algorithm>
 #include <limits>
 #include <random>
@@ -38,7 +39,7 @@ public:
 
     GameOfLife();
 
-    void run();
+    void run(int gen_count);
 
 private:
     Window window_;
