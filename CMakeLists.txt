@@ -18,11 +18,7 @@ include_directories(include)
 include_directories(${MPI_INCLUDE_PATH})
 
 add_executable(game_of_life
-        src/generation.cpp
-        src/generation_saver.cpp
         src/main.cpp
-        src/utils.cpp
-        src/window.cpp
 )
 target_link_libraries(game_of_life PRIVATE
         sfml-graphics
