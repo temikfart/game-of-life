@@ -44,9 +44,6 @@ private:
         return alive_neighbor_count == 3;
     }
     void drawNextGen();
-
-    void saveStartState() const;
-    void saveFinalState() const;
 };
 
 } // gol
