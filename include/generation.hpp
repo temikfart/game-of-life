@@ -20,14 +20,17 @@ public:
     explicit Generation(int width, int height)
         : width(width), height(height), gen_(height, std::vector<Cell>(width)) {}
 
-    const Cell& cell(int x, int y) const {
-        return gen_[y][x];
+    const Cell& cell(int col, int row) const {
+        return gen_[row][col];
+    }
+    std::vector<std::vector<Cell>>& cells() {
+        return gen_;
     }
     const std::vector<std::vector<Cell>>& cells() const {
         return gen_;
     }
-    void setState(int x, int y, bool alive) {
-        gen_[y][x].alive = alive;
+    void setState(int col, int row, bool alive) {
+        gen_[row][col].alive = alive;
     }
     void setRandomStates() {
         for (auto& line : gen_) {
