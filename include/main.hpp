@@ -10,7 +10,9 @@
 #include "game_rules.hpp"
 #include "generation.hpp"
 #include "generation_saver.hpp"
+#include "printers.hpp"
 #include "utils.hpp"
+#include "validation.hpp"
 #include "window.hpp"
 
 void calcNextGen(const gol::Generation& curr_gen, gol::Generation& next_gen);
