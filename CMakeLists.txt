@@ -18,7 +18,6 @@ include_directories(include)
 include_directories(${MPI_INCLUDE_PATH})
 
 add_executable(game_of_life
-        src/game_of_life.cpp
         src/generation.cpp
         src/generation_saver.cpp
         src/main.cpp
