@@ -2,22 +2,36 @@
 
 using namespace gol;
 
+using Range = std::pair<int, int>;
+
 constexpr int generations_num = 1'000;
-constexpr int kWidth = 300;
-constexpr int kHeight = 300;
+constexpr int kWidth = 360;
+constexpr int kHeight = 360;
+constexpr int kRows = 1;
+constexpr int kCols = 1;
+constexpr int width = kWidth / kCols;
+constexpr int height = kHeight / kRows;
 
 Window window(kWidth, kHeight, kCellSize);
 
+void calcRanges(Range& rows_range, Range& cols_range, int rank) {
+    rows_range.first = height * (rank / kRows);
+    rows_range.second = rows_range.first + height - 1;
+
+    cols_range.first = width * (rank % kCols);
+    cols_range.second = cols_range.first + width - 1;
+}
+
 void calcNextGen(const Generation& curr_gen, Generation& next_gen) {
-    for (int y = 0; y < next_gen.height; y++) {
-        for (int x = 0; x < next_gen.width; x++) {
-            next_gen.setState(x, y, isCellAliveInCurrGen(curr_gen, x, y));
+    for (int row = 0; row < next_gen.height; row++) {
+        for (int col = 0; col < next_gen.width; col++) {
+            next_gen.setState(col, row, isCellAliveInCurrGen(curr_gen, col, row));
         }
     }
 }
-bool isCellAliveInCurrGen(const Generation& curr_gen, int x, int y) {
-    int alive_neighbors_count = calcAliveNeighborCount(curr_gen, x, y);
-    if (curr_gen.cell(x, y).alive) {
+bool isCellAliveInCurrGen(const Generation& curr_gen, int col, int row) {
+    int alive_neighbors_count = calcAliveNeighborCount(curr_gen, col, row);
+    if (curr_gen.cell(col, row).alive) {
         if (underpopulation(alive_neighbors_count)
             || overpopulation(alive_neighbors_count)) {
             return false;
@@ -28,17 +42,17 @@ bool isCellAliveInCurrGen(const Generation& curr_gen, int x, int y) {
     }
     return reproduction(alive_neighbors_count);
 }
-int calcAliveNeighborCount(const Generation& curr_gen, int x, int y) {
+int calcAliveNeighborCount(const Generation& curr_gen, int col, int row) {
     int count = 0;
-    for (int dx = -1; dx <= 1; dx++) {
-        for (int dy = -1; dy <= 1; dy++) {
-            if (dx == 0 && dy == 0)
+    for (int dcol = -1; dcol <= 1; dcol++) {
+        for (int drow = -1; drow <= 1; drow++) {
+            if (dcol == 0 && drow == 0)
                 continue;
 
-            int nx = x + dx;
-            int ny = y + dy;
-            if (nx >= 0 && nx < kWidth && ny >= 0 && ny < kHeight) {
-                if (curr_gen.cell(nx, ny).alive) {
+            int ncol = col + dcol;
+            int nrow = row + drow;
+            if (ncol >= 0 && ncol < kWidth && nrow >= 0 && nrow < kHeight) {
+                if (curr_gen.cell(ncol, nrow).alive) {
                     count++;
                 }
             }
@@ -47,48 +61,74 @@ int calcAliveNeighborCount(const Generation& curr_gen, int x, int y) {
     return count;
 }
 void drawNextGen(const Generation& next_gen) {
-    for (int y = 0; y < kHeight; y++) {
-        for (int x = 0; x < kWidth; x++) {
-            if (next_gen.cell(x, y).alive) {
-                window.paintCell(x, y);
+    for (int row = 0; row < kHeight; row++) {
+        for (int col = 0; col < kWidth; col++) {
+            if (next_gen.cell(col, row).alive) {
+                window.paintCell(col, row);
             }
         }
     }
 }
 
-void run(int id, int argc, char* argv[]) {
-    Generation curr_gen_(kWidth, kHeight);
-    Generation next_gen_(kWidth, kHeight);
+void run(/*int id,*/ int argc, char* argv[]) {
+    printGridSize(kHeight, kWidth);
 
+    Generation curr_gen_(kWidth, kHeight), final_gen_(kWidth, kHeight);
     curr_gen_.setRandomStates();
-    GenerationSaver::saveStartState(id, curr_gen_);
+//    GenerationSaver::saveStartState(id, curr_gen_);
 
     MPI_Init(&argc, &argv);
 
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    validateNumberOfProcesses(size, kRows * kCols);
+
+    Generation t_curr_gen(width, height), t_next_gen(width, height);
+    Range t_rows_range, t_cols_range;
+    calcRanges(t_rows_range, t_cols_range, rank);
+    printRanges(rank, t_rows_range, t_cols_range);
+
+    // Get start states
+    if (rank == 0) {
+        for (int col = t_cols_range.first; col < t_cols_range.second; ++col) {
+            for (int row = t_rows_range.first; row < t_rows_range.second; ++row) {
+                t_curr_gen.setState(col, row, curr_gen_.cell(col, row).alive);
+            }
+        }
+
+        for (int t = 1; t < size; ++t) {
+            Range rows_range, cols_range;
+            receiveRangesFromThread(t, rows_range, cols_range);
+            sendGenPartToThread(t, curr_gen_, rows_range, cols_range);
+        }
+    } else {
+        sendRangesToMain(rank, t_rows_range, t_cols_range);
+        receiveGenPartFromMain(rank, t_curr_gen);
+    }
 
     int gen_num = 0;
     while (!window.closed() && gen_num < generations_num) {
-        if (gen_num % 50 == 0)
-            std::cout << "Generation #" << gen_num << std::endl;
-        calcNextGen(curr_gen_, next_gen_);
-        drawNextGen(next_gen_);
+        if (rank == 0 && gen_num % 50 == 0)
+            printGenerationNumber(gen_num);
+
+        calcNextGen(t_curr_gen, t_next_gen);
+        drawNextGen(t_next_gen);
 
         MPI_Barrier(MPI_COMM_WORLD);
-        std::swap(curr_gen_, next_gen_);
+        std::swap(t_curr_gen, t_next_gen);
         window.flushWindow();
         gen_num++;
     }
-    GenerationSaver::saveFinalState(id, curr_gen_);
 
     MPI_Finalize();
+//    GenerationSaver::saveFinalState(id, final_gen_);
 }
 
 int main(int argc, char* argv[]) {
-    int id = 0;
-    run(id, argc, argv);
+//    int id = 0;
+//    run(id, argc, argv);
+    run(argc, argv);
 
     return 0;
 }
