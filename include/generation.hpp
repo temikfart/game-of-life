@@ -14,13 +14,13 @@ public:
         bool alive = false;
     };
 
-    int width;
     int height;
+    int width;
 
-    explicit Generation(int width, int height)
-        : width(width), height(height), gen_(height, std::vector<Cell>(width)) {}
+    explicit Generation(int height, int width)
+        : height(height), width(width), gen_(height, std::vector<Cell>(width)) {}
 
-    const Cell& cell(int col, int row) const {
+    const Cell& cell(int row, int col) const {
         return gen_[row][col];
     }
     std::vector<std::vector<Cell>>& cells() {
@@ -29,7 +29,7 @@ public:
     const std::vector<std::vector<Cell>>& cells() const {
         return gen_;
     }
-    void setState(int col, int row, bool alive) {
+    void setState(int row, int col, bool alive) {
         gen_[row][col].alive = alive;
     }
     void setRandomStates() {
@@ -47,8 +47,8 @@ private:
 std::ostream& operator<<(std::ostream& os, const Generation& gen) {
     const auto& rows = gen.cells();
     for (unsigned row = 0; row < rows.size(); ++row) {
-        for (auto col : rows[row]) {
-            os << col.alive;
+        for (const auto& cell : rows[row]) {
+            os << cell.alive;
         }
         if (row != (rows.size() - 1)) {
             os << std::endl;
