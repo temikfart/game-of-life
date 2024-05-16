@@ -23,9 +23,9 @@ void printRanges(int rank, const std::pair<int, int>& rows_range,
     oss << "[" << cols_range.first << ", " << cols_range.second << "]";
     std::cout << oss.str() << std::endl;
 }
-void printGeneration(const Generation& gen) {
+void printGeneration(const std::string& descr, const Generation& gen) {
     std::ostringstream oss;
-    oss << "Start generation:" << std::endl;
+    oss << descr << std::endl;
     oss << gen << std::endl;
     std::cout << oss.str() << std::endl;
 }

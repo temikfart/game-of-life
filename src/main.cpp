@@ -86,16 +86,18 @@ void run(/*int id,*/ int argc, char* argv[]) {
 
     if (rank == 0) {
         printGridSize(kHeight, kWidth);
-        printGeneration(curr_gen_);
+        printGeneration("Start generation:", curr_gen_);
         std::cout << std::endl;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
 
+    // Calculate ranges for the thread
+    MPI_Barrier(MPI_COMM_WORLD);
     Generation t_curr_gen(height, width), t_next_gen(height, width);
     Range t_rows_range, t_cols_range;
     calcRanges(rank, t_rows_range, t_cols_range);
-    MPI_Barrier(MPI_COMM_WORLD);
 
+    // Set start states for all threads
+    MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0) {
         for (int row = t_rows_range.first; row <= t_rows_range.second; ++row) {
             for (int col = t_cols_range.first; col <= t_cols_range.second; ++col) {
@@ -106,20 +108,22 @@ void run(/*int id,*/ int argc, char* argv[]) {
         }
     }
 
-    // Get start states
+    std::vector<Range> rows_ranges, cols_ranges;
     if (rank == 0) {
+        rows_ranges.resize(size - 1);
+        cols_ranges.resize(size - 1);
         for (int t = 1; t < size; ++t) {
-            Range rows_range, cols_range;
-            receiveRangesFromThread(t, rows_range, cols_range);
-            sendGenPartToThread(t, curr_gen_, rows_range, cols_range);
+            receiveRangesFromThread(t, rows_ranges[t - 1], cols_ranges[t - 1]);
+            sendGenPartToThread(t, curr_gen_, rows_ranges[t - 1], cols_ranges[t - 1]);
         }
     } else {
         sendRangesToMain(t_rows_range, t_cols_range);
         receiveGenPartFromMain(t_curr_gen);
     }
-    printGenerationPart(rank, t_curr_gen);
-    MPI_Barrier(MPI_COMM_WORLD);
+//    printGenerationPart(rank, t_curr_gen);
 
+    // Calculate next generation `generation_num` times
+    MPI_Barrier(MPI_COMM_WORLD);
 //    int gen_num = 0;
 //    while (!window.closed() && gen_num < generations_num) {
 //        if (rank == 0 && gen_num % 50 == 0)
@@ -129,10 +133,46 @@ void run(/*int id,*/ int argc, char* argv[]) {
 //        drawNextGen(t_next_gen);
 //
 //        MPI_Barrier(MPI_COMM_WORLD);
-//        std::swap(t_curr_gen, t_next_gen);
+        std::swap(t_curr_gen, t_next_gen);
 //        window.flushWindow();
 //        gen_num++;
 //    }
+
+    // Collect final Generation
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0) {
+        for (int row = t_rows_range.first; row <= t_rows_range.second; ++row) {
+            for (int col = t_cols_range.first; col <= t_cols_range.second; ++col) {
+                int t_row = row - t_rows_range.first;
+                int t_col = col - t_cols_range.first;
+                final_gen_.setState(row, col, t_next_gen.cell(t_row, t_col));
+            }
+        }
+
+        for (int t = 1; t < size; ++t) {
+            Generation result_gen(height, width);
+            receiveResultGenFromThread(t, result_gen);
+
+            auto& rows_range = rows_ranges[t - 1];
+            auto& cols_range = cols_ranges[t - 1];
+            for (int row = rows_range.first; row <= rows_range.second; ++row) {
+                for (int col = cols_range.first; col <= cols_range.second; ++col) {
+                    int t_row = row - rows_range.first;
+                    int t_col = col - cols_range.first;
+                    final_gen_.setState(row, col, result_gen.cell(t_row, t_col).alive);
+                }
+            }
+        }
+    } else {
+        sendResultGenToMain(t_next_gen);
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0) {
+        printGeneration("Final generation:", final_gen_);
+        std::cout << "Current and Final generations are equal: "
+                  << (final_gen_ == curr_gen_) << std::endl;
+    }
 
     MPI_Finalize();
 //    GenerationSaver::saveFinalState(id, final_gen_);

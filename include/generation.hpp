@@ -12,6 +12,10 @@ class Generation {
 public:
     struct Cell {
         bool alive = false;
+
+        constexpr operator bool() const {
+            return alive;
+        }
     };
 
     int height;
@@ -55,6 +59,10 @@ std::ostream& operator<<(std::ostream& os, const Generation& gen) {
         }
     }
     return os;
+}
+
+bool operator==(const Generation& lhs, const Generation& rhs) {
+    return lhs.height == rhs.height && lhs.width == rhs.width && lhs.cells() == rhs.cells();
 }
 
 } // gol

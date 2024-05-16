@@ -7,6 +7,7 @@
 #include <random>
 #include <vector>
 #include <utility>
+#include <map>
 
 #include "exchange.hpp"
 #include "game_rules.hpp"

@@ -61,4 +61,32 @@ void receiveGenPartFromMain(Generation& t_curr_gen) {
     delete[] cells_to_receive;
 }
 
+void sendResultGenToMain(const Generation& next_gen) {
+    int count = next_gen.height * next_gen.width;
+
+    auto* cells_to_send = new bool[count];
+    for (int row = 0; row < next_gen.height; ++row) {
+        for (int col = 0; col < next_gen.width; ++col) {
+            int idx = row * next_gen.width + col;
+            cells_to_send[idx] = next_gen.cell(row, col).alive;
+        }
+    }
+    MPI_Send(cells_to_send, count, MPI_CXX_BOOL, kMainRank, kDefaultTag, MPI_COMM_WORLD);
+    delete[] cells_to_send;
+}
+void receiveResultGenFromThread(int thread_rank, Generation& t_next_gen) {
+    int count = t_next_gen.height * t_next_gen.width;
+
+    auto* cells_to_receive = new bool[count];
+    MPI_Recv(cells_to_receive, count, MPI_CXX_BOOL, thread_rank, kDefaultTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    for (int row = 0; row < t_next_gen.height; ++row) {
+        for (int col = 0; col < t_next_gen.width; ++col) {
+            int idx = row * t_next_gen.width + col;
+            t_next_gen.setState(row, col, cells_to_receive[idx]);
+        }
+    }
+    delete[] cells_to_receive;
+}
+
 } // gol
