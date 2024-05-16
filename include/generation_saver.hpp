@@ -28,9 +28,7 @@ private:
     static void saveGen(const std::string& filename, const Generation& gen) {
         std::ofstream file(filename);
         file << gen.width << " " << gen.height << std::endl;
-        for (const auto& row: gen.cells()) {
-            file << serializeRow(row) << std::endl;
-        }
+        file << gen << std::endl;
         file.close();
     }
     static void createResultDirIfNotExists() {
@@ -49,13 +47,6 @@ private:
     }
     static std::string getResultDirPrefixPath() {
         return std::string(default_dir_name) + "/";
-    }
-    static std::string serializeRow(const std::vector<Generation::Cell>& row) {
-        std::stringstream ss;
-        for (const auto& cell: row) {
-            ss << cell.alive;
-        }
-        return ss.str();
     }
 };
 

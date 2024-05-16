@@ -5,10 +5,10 @@ using namespace gol;
 using Range = std::pair<int, int>;
 
 constexpr int generations_num = 1'000;
-constexpr int kWidth = 360;
-constexpr int kHeight = 360;
-constexpr int kRows = 1;
-constexpr int kCols = 1;
+constexpr int kWidth = 6;
+constexpr int kHeight = 6;
+constexpr int kRows = 2;
+constexpr int kCols = 2;
 constexpr int width = kWidth / kCols;
 constexpr int height = kHeight / kRows;
 
@@ -71,8 +71,6 @@ void drawNextGen(const Generation& next_gen) {
 }
 
 void run(/*int id,*/ int argc, char* argv[]) {
-    printGridSize(kHeight, kWidth);
-
     Generation curr_gen_(kWidth, kHeight), final_gen_(kWidth, kHeight);
     curr_gen_.setRandomStates();
 //    GenerationSaver::saveStartState(id, curr_gen_);
@@ -82,12 +80,22 @@ void run(/*int id,*/ int argc, char* argv[]) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    validateNumberOfProcesses(size, kRows * kCols);
+    if (rank == 0) {
+        validateNumberOfProcesses(size, kRows * kCols);
+    }
+
+    if (rank == 0) {
+        printGridSize(kHeight, kWidth);
+        printGeneration(curr_gen_);
+        std::cout << std::endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     Generation t_curr_gen(width, height), t_next_gen(width, height);
     Range t_rows_range, t_cols_range;
     calcRanges(t_rows_range, t_cols_range, rank);
-    printRanges(rank, t_rows_range, t_cols_range);
+//    printRanges(rank, t_rows_range, t_cols_range);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     // Get start states
     if (rank == 0) {
@@ -96,16 +104,20 @@ void run(/*int id,*/ int argc, char* argv[]) {
                 t_curr_gen.setState(col, row, curr_gen_.cell(col, row).alive);
             }
         }
+        printGenerationPart(rank, t_curr_gen);
 
         for (int t = 1; t < size; ++t) {
             Range rows_range, cols_range;
             receiveRangesFromThread(t, rows_range, cols_range);
+//            printRanges(t, rows_range, cols_range);
             sendGenPartToThread(t, curr_gen_, rows_range, cols_range);
         }
     } else {
         sendRangesToMain(rank, t_rows_range, t_cols_range);
         receiveGenPartFromMain(rank, t_curr_gen);
     }
+    MPI_Barrier(MPI_COMM_WORLD);
+    printGenerationPart(rank, t_curr_gen);
 
     int gen_num = 0;
     while (!window.closed() && gen_num < generations_num) {

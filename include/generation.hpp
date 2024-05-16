@@ -44,4 +44,17 @@ private:
     std::vector<std::vector<Cell>> gen_;
 };
 
+std::ostream& operator<<(std::ostream& os, const Generation& gen) {
+    const auto& rows = gen.cells();
+    for (unsigned row = 0; row < rows.size(); ++row) {
+        for (auto col : rows[row]) {
+            os << col.alive;
+        }
+        if (row != (rows.size() - 1)) {
+            os << std::endl;
+        }
+    }
+    return os;
+}
+
 } // gol
