@@ -25,6 +25,7 @@ void printRanges(int rank, const std::pair<int, int>& rows_range,
 }
 void printGeneration(const Generation& gen) {
     std::ostringstream oss;
+    oss << "Start generation:" << std::endl;
     oss << gen << std::endl;
     std::cout << oss.str() << std::endl;
 }
@@ -34,14 +35,14 @@ void printGenerationPart(int rank, const Generation& gen) {
     oss << gen << std::endl;
     std::cout << oss.str() << std::endl;
 }
-void printGenerationPartDebug(int rank, const Generation::Cell* cells_ptr,
+void printGenerationPartDebug(int rank, const bool* cells_ptr,
                               int count, bool receive = false) {
     std::ostringstream oss;
     oss << "[Debug] ";
     oss << (receive ? "[RCV]" : "[SND]") << " ";
     oss << "Thread " << rank << " generation:" << std::endl;
     for (int i = 0; i < count; ++i) {
-        oss << cells_ptr[i].alive << " ";
+        oss << cells_ptr[i] << " ";
     }
     oss << std::endl;
     std::cout << oss.str() << std::endl;

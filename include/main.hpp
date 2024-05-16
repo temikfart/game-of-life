@@ -17,10 +17,10 @@
 #include "validation.hpp"
 #include "window.hpp"
 
-void calcRanges(std::pair<int, int>& rows_range, std::pair<int, int>& cols_range, int rank);
+void calcRanges(int rank, std::pair<int, int>& rows_range, std::pair<int, int>& cols_range);
 
 void calcNextGen(const gol::Generation& curr_gen, gol::Generation& next_gen);
-bool isCellAliveInCurrGen(const gol::Generation& curr_gen, int col, int row);
-int calcAliveNeighborCount(const gol::Generation& curr_gen, int col, int row);
+bool isCellAliveInCurrGen(const gol::Generation& curr_gen, int row, int col);
+int calcAliveNeighborCount(const gol::Generation& curr_gen, int row, int col);
 void drawNextGen(const gol::Generation& next_gen);
 void run(/*int id,*/ int argc, char* argv[]);
