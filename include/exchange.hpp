@@ -103,35 +103,141 @@ void receiveResultGenFromThread(int thread_rank, Generation& t_next_gen) {
     delete[] cells_to_receive;
 }
 
-//void sendReceiveBoundaries() {
-//    // communcations order [TL, T, TR, L, R, BL, B, BR]
-//    // receive order is the reverse
-//
-//    MPI_Request requests[8];
-//    MPI_Request dummy_request;
-//
-//    for (int i = 0; i < 8; i++) {
-//        // if neighbour exists
-//        if (neighbours[i] != -1) {
-//            // send data to them
-//            MPI_Isend(grid + send_offset[i], 1, MPI_BYTE, neighbours[i],
-//                      i, MPI_COMM_WORLD, &dummy_request);
-//
-//            // wait to recieve from them on the correct communcation tag (reverse order)
-//            MPI_Irecv(grid + recv_offset[i], 1, MPI_BYTE, neighbours[i],
-//                      7-i, MPI_COMM_WORLD, requests + i);
-//
-//        }
-//            // no neighbour to send to (sink boudnary)
-//        else {
-//            // send a dud message to yourself to mark request as complete
-//            MPI_Isend(nullptr, 0, MPI_BYTE, id, i, MPI_COMM_WORLD, requests + i);
-//            MPI_Request_free(requests + i);
-//
-//        }
-//    }
-//
-//    MPI_Waitall(8, requests, MPI_STATUSES_IGNORE);
-//}
+void sendCornerCell(int dst_rank, const Generation::Cell& cell) {
+    MPI_Send(&cell.alive, 1, MPI_CXX_BOOL, dst_rank, kDefaultTag, MPI_COMM_WORLD);
+}
+void receiveCornerCell(int src_rank, Generation::Cell& cell) {
+    MPI_Recv(&cell.alive, 1, MPI_CXX_BOOL, src_rank, kDefaultTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
+void sendBoundaryCells(int dst_rank, int count, const bool* cells) {
+    MPI_Send(cells, count, MPI_CXX_BOOL, dst_rank, kDefaultTag, MPI_COMM_WORLD);
+}
+void receiveBoundaryCells(int src_rank, int count, bool* cells) {
+    MPI_Recv(cells, count, MPI_CXX_BOOL, src_rank, kDefaultTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
+void sendReceiveBoundaries(int rank, Generation& t_curr_gen) {
+    bool isTopRow = rank >= 0 && rank < kCols;
+    bool isBottomRow = (rank >= (kRows - 1) * kCols) && (rank < kRows * kCols);
+    bool isLeftCol = rank % kCols == 0;
+    bool isRightCol = rank % kCols == kCols - 1;
+
+    Generation::Border t_border = t_curr_gen.getBorder();
+//    printBorder(rank, t_border);
+
+    if (!isTopRow && !isLeftCol) {
+        /** Send Top Left cell */
+        sendCornerCell(rank - kCols - 1, t_border.top_left);
+    }
+    if (!isBottomRow && !isRightCol) {
+        /** Receive Bottom Right cell */
+        receiveCornerCell(rank + kCols + 1,
+                          t_curr_gen.cell(t_curr_gen.height - 1, t_curr_gen.width - 1));
+    }
+
+    if (!isTopRow && !isRightCol) {
+        /** Send Top Right cell */
+        sendCornerCell(rank - kCols + 1, t_border.top_right);
+    }
+    if (!isBottomRow && !isLeftCol) {
+        /** Receive Bottom Left cell */
+        receiveCornerCell(rank + kCols - 1, t_curr_gen.cell(t_curr_gen.height - 1, 0));
+    }
+
+    if (!isBottomRow && !isRightCol) {
+        /** Send Bottom Right cell */
+        sendCornerCell(rank + kCols + 1, t_border.bottom_right);
+    }
+    if (!isTopRow &&!isLeftCol) {
+        /** Receive Top Left cell */
+        receiveCornerCell(rank - kCols - 1, t_curr_gen.cell(0, 0));
+    }
+
+    if (!isBottomRow && !isLeftCol) {
+        /** Send Bottom Left cell */
+        sendCornerCell(rank + kCols - 1, t_border.bottom_left);
+    }
+    if (!isTopRow && !isRightCol) {
+        /** Receive Top Right cell */
+        receiveCornerCell(rank - kCols + 1, t_curr_gen.cell(0, t_curr_gen.width - 1));
+    }
+
+    int horizontal_count = t_border.width;
+    if (!isTopRow) {
+        /** Send Top cells */
+        auto* top_row = new bool[horizontal_count];
+        for (int col = 0; col < horizontal_count; ++col) {
+            top_row[col] = t_border.top[col].alive;
+        }
+        sendBoundaryCells(rank - kCols, horizontal_count, top_row);
+        delete[] top_row;
+    }
+    if (!isBottomRow) {
+        /** Receive Bottom cells */
+        auto* bottom_row = new bool[horizontal_count];
+        receiveBoundaryCells(rank + kCols, horizontal_count, bottom_row);
+        for (int col = 0; col < horizontal_count; ++col) {
+            t_curr_gen.cell(t_curr_gen.height - 1, 1 + col).alive = bottom_row[col];
+        }
+        delete[] bottom_row;
+    }
+
+    if (!isBottomRow) {
+        /** Send Bottom cells */
+        auto* bottom_row = new bool[horizontal_count];
+        for (int col = 0; col < horizontal_count; ++col) {
+            bottom_row[col] = t_border.bottom[col].alive;
+        }
+        sendBoundaryCells(rank + kCols, horizontal_count, bottom_row);
+        delete[] bottom_row;
+    }
+    if (!isTopRow) {
+        /** Receive Top cells */
+        auto* top_row = new bool[horizontal_count];
+        receiveBoundaryCells(rank - kCols, horizontal_count, top_row);
+        for (int col = 0; col < horizontal_count; ++col) {
+            t_curr_gen.cell(0, 1 + col).alive = top_row[col];
+        }
+        delete[] top_row;
+    }
+
+    int vertical_count = t_border.height;
+    if (!isLeftCol) {
+        /** Send Left cells */
+        auto* left_col = new bool[vertical_count];
+        for (int row = 0; row < vertical_count; ++row) {
+            left_col[row] = t_border.left[row].alive;
+        }
+        sendBoundaryCells(rank - 1, vertical_count, left_col);
+        delete[] left_col;
+    }
+    if (!isRightCol) {
+        /** Receive Right cells */
+        auto* right_col = new bool[vertical_count];
+        receiveBoundaryCells(rank + 1, vertical_count, right_col);
+        for (int row = 0; row < vertical_count; ++row) {
+            t_curr_gen.cell(1 + row, t_curr_gen.width - 1).alive = right_col[row];
+        }
+        delete[] right_col;
+    }
+
+    if (!isRightCol) {
+        /** Send Right cells */
+        auto* right_col = new bool[vertical_count];
+        for (int row = 0; row < vertical_count; ++row) {
+            right_col[row] = t_border.right[row].alive;
+        }
+        sendBoundaryCells(rank + 1, vertical_count, right_col);
+        delete[] right_col;
+    }
+    if (!isLeftCol) {
+        /** Receive Left cells */
+        auto* left_col = new bool[vertical_count];
+        receiveBoundaryCells(rank - 1, vertical_count, left_col);
+        for (int row = 0; row < vertical_count; ++row) {
+            t_curr_gen.cell(1 + row, 0).alive = left_col[row];
+        }
+        delete[] left_col;
+    }
+}
 
 } // gol

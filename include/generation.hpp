@@ -38,6 +38,9 @@ public:
     const Cell& cell(int row, int col) const {
         return gen_[row][col];
     }
+    Cell& cell(int row, int col) {
+        return gen_[row][col];
+    }
     std::vector<std::vector<Cell>>& cells() {
         return gen_;
     }
