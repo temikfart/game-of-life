@@ -15,10 +15,12 @@ constexpr int height = kHeight / kRows;
 Window window(kWidth, kHeight, kCellSize);
 
 void calcRanges(int rank, Range& rows_range, Range& cols_range) {
-    rows_range.first = height * (rank / kRows);
+    const int b_th = 1;
+
+    rows_range.first = height * (rank / kRows) + b_th;
     rows_range.second = rows_range.first + height - 1;
 
-    cols_range.first = width * (rank % kCols);
+    cols_range.first = width * (rank % kCols) + b_th;
     cols_range.second = cols_range.first + width - 1;
 }
 
@@ -42,6 +44,9 @@ bool isCellAliveInCurrGen(const Generation& curr_gen, int row, int col) {
     }
     return reproduction(alive_neighbors_count);
 }
+bool isNeighborInGrid(int nrow, int ncol, int grid_width, int grid_height) {
+    return nrow >= 0 && nrow < grid_height && ncol >= 0 && ncol < grid_width;
+}
 int calcAliveNeighborCount(const Generation& curr_gen, int row, int col) {
     int count = 0;
     for (int dcol = -1; dcol <= 1; dcol++) {
@@ -51,7 +56,7 @@ int calcAliveNeighborCount(const Generation& curr_gen, int row, int col) {
 
             int ncol = col + dcol;
             int nrow = row + drow;
-            if (ncol >= 0 && ncol < kWidth && nrow >= 0 && nrow < kHeight) {
+            if (isNeighborInGrid(nrow, ncol, curr_gen.width, curr_gen.height)) {
                 if (curr_gen.cell(nrow, ncol).alive) {
                     count++;
                 }
@@ -90,19 +95,23 @@ void run(/*int id,*/ int argc, char* argv[]) {
         std::cout << std::endl;
     }
 
-    // Calculate ranges for the thread
+    /** Calculate ranges for the thread */
     MPI_Barrier(MPI_COMM_WORLD);
-    Generation t_curr_gen(height, width), t_next_gen(height, width);
+    // +2 to include the borders
+    int t_gen_height = height + 2;
+    int t_gen_width = width + 2;
+    Generation t_curr_gen(t_gen_height, t_gen_width), t_next_gen(t_gen_height, t_gen_width);
     Range t_rows_range, t_cols_range;
     calcRanges(rank, t_rows_range, t_cols_range);
+//    printRanges(rank, t_rows_range, t_cols_range, true);
 
-    // Set start states for all threads
+    /** Set start states for all threads */
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0) {
-        for (int row = t_rows_range.first; row <= t_rows_range.second; ++row) {
-            for (int col = t_cols_range.first; col <= t_cols_range.second; ++col) {
-                t_curr_gen.setState(row - t_rows_range.first,
-                                    col - t_cols_range.first,
+        for (int row = t_rows_range.first - 1; row <= t_rows_range.second - 1; ++row) {
+            for (int col = t_cols_range.first - 1; col <= t_cols_range.second - 1; ++col) {
+                t_curr_gen.setState(row + 2 - t_rows_range.first,
+                                    col + 2 - t_cols_range.first,
                                     curr_gen_.cell(row, col).alive);
             }
         }
@@ -120,9 +129,9 @@ void run(/*int id,*/ int argc, char* argv[]) {
         sendRangesToMain(t_rows_range, t_cols_range);
         receiveGenPartFromMain(t_curr_gen);
     }
-//    printGenerationPart(rank, t_curr_gen);
+    printGenerationPart(rank, t_curr_gen, true);
 
-    // Calculate next generation `generation_num` times
+    /** Calculate next generation `generation_num` times */
     MPI_Barrier(MPI_COMM_WORLD);
 //    int gen_num = 0;
 //    while (!window.closed() && gen_num < generations_num) {
@@ -138,27 +147,27 @@ void run(/*int id,*/ int argc, char* argv[]) {
 //        gen_num++;
 //    }
 
-    // Collect final Generation
+    /** Collect final Generation */
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0) {
-        for (int row = t_rows_range.first; row <= t_rows_range.second; ++row) {
-            for (int col = t_cols_range.first; col <= t_cols_range.second; ++col) {
-                int t_row = row - t_rows_range.first;
-                int t_col = col - t_cols_range.first;
+        for (int row = t_rows_range.first - 1; row <= t_rows_range.second - 1; ++row) {
+            for (int col = t_cols_range.first - 1; col <= t_cols_range.second - 1; ++col) {
+                int t_row = row + 2 - t_rows_range.first;
+                int t_col = col + 2 - t_cols_range.first;
                 final_gen_.setState(row, col, t_next_gen.cell(t_row, t_col));
             }
         }
 
         for (int t = 1; t < size; ++t) {
-            Generation result_gen(height, width);
+            Generation result_gen(t_gen_height, t_gen_width);
             receiveResultGenFromThread(t, result_gen);
 
             auto& rows_range = rows_ranges[t - 1];
             auto& cols_range = cols_ranges[t - 1];
-            for (int row = rows_range.first; row <= rows_range.second; ++row) {
-                for (int col = cols_range.first; col <= cols_range.second; ++col) {
-                    int t_row = row - rows_range.first;
-                    int t_col = col - cols_range.first;
+            for (int row = rows_range.first - 1; row <= rows_range.second - 1; ++row) {
+                for (int col = cols_range.first - 1; col <= cols_range.second - 1; ++col) {
+                    int t_row = row + 2 - rows_range.first;
+                    int t_col = col + 2 - cols_range.first;
                     final_gen_.setState(row, col, result_gen.cell(t_row, t_col).alive);
                 }
             }

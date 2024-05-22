@@ -29,10 +29,25 @@ void printGeneration(const std::string& descr, const Generation& gen) {
     oss << gen << std::endl;
     std::cout << oss.str() << std::endl;
 }
-void printGenerationPart(int rank, const Generation& gen) {
+void printGenerationPart(int rank, const Generation& gen, bool with_border = false) {
     std::ostringstream oss;
     oss << "Thread " << rank << " generation:" << std::endl;
-    oss << gen << std::endl;
+    if (with_border) {
+        for (int row = 0; row < gen.height; ++row) {
+            if (row == 1 || row == gen.height - 1) {
+                oss << std::endl;
+            }
+            for (int col = 0; col < gen.width; ++col) {
+                if (col == 1 || col == gen.width - 1) {
+                    oss << " ";
+                }
+                oss << gen.cell(row, col);
+            }
+            oss << std::endl;
+        }
+    } else {
+        oss << gen << std::endl;
+    }
     std::cout << oss.str() << std::endl;
 }
 void printGenerationPartDebug(int rank, const bool* cells_ptr,

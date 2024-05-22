@@ -22,6 +22,7 @@ void calcRanges(int rank, std::pair<int, int>& rows_range, std::pair<int, int>& 
 
 void calcNextGen(const gol::Generation& curr_gen, gol::Generation& next_gen);
 bool isCellAliveInCurrGen(const gol::Generation& curr_gen, int row, int col);
+bool isNeighborInGrid(int nrow, int ncol, int grid_width, int grid_height);
 int calcAliveNeighborCount(const gol::Generation& curr_gen, int row, int col);
 void drawNextGen(const gol::Generation& next_gen);
 void run(/*int id,*/ int argc, char* argv[]);
