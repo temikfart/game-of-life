@@ -119,7 +119,6 @@ void sendReceiveBoundaries(int rank, Generation& t_curr_gen) {
     bool isRightCol = rank % kCols == kCols - 1;
 
     Generation::Border t_border = t_curr_gen.getBorder();
-//    printBorder(rank, t_border);
 
     if (!isTopRow && !isLeftCol) {
         /** Send Top Left cell */

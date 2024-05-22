@@ -32,7 +32,6 @@ void run(/*int id,*/ int argc, char* argv[]) {
     Generation t_curr_gen(t_gen_height, t_gen_width), t_next_gen(t_gen_height, t_gen_width);
     Range t_rows_range, t_cols_range;
     calcRanges(rank, t_rows_range, t_cols_range);
-//    printRanges(rank, t_rows_range, t_cols_range, true);
 
     /** Set start states for all threads */
     MPI_Barrier(MPI_COMM_WORLD);
@@ -58,7 +57,6 @@ void run(/*int id,*/ int argc, char* argv[]) {
         sendRangesToMain(t_rows_range, t_cols_range);
         receiveGenPartFromMain(t_curr_gen);
     }
-//    printGenerationPart(rank, t_curr_gen, false);
 
     /** Calculate next generation `generation_num` times */
     MPI_Barrier(MPI_COMM_WORLD);
@@ -70,8 +68,7 @@ void run(/*int id,*/ int argc, char* argv[]) {
         sendReceiveBoundaries(rank, t_curr_gen);
         calcNextGen(t_curr_gen, t_next_gen);
 //        drawNextGen(t_next_gen);
-//
-        MPI_Barrier(MPI_COMM_WORLD);
+
         std::swap(t_curr_gen, t_next_gen);
 //        window.flushWindow();
         gen_num++;
@@ -115,8 +112,6 @@ void run(/*int id,*/ int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
-//    int id = 0;
-//    run(id, argc, argv);
     run(argc, argv);
 
     return 0;
