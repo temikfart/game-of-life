@@ -5,12 +5,6 @@ using namespace gol;
 using Range = std::pair<int, int>;
 
 //constexpr int generations_num = 1'000;
-constexpr int kWidth = 6;
-constexpr int kHeight = 6;
-constexpr int kRows = 2;
-constexpr int kCols = 2;
-constexpr int width = kWidth / kCols;
-constexpr int height = kHeight / kRows;
 
 Window window(kWidth, kHeight, kCellSize);
 

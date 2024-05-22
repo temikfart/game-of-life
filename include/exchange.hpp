@@ -8,6 +8,13 @@
 
 namespace gol {
 
+constexpr int kWidth = 6;
+constexpr int kHeight = 6;
+constexpr int kRows = 2;
+constexpr int kCols = 2;
+constexpr int width = kWidth / kCols;
+constexpr int height = kHeight / kRows;
+
 constexpr int kMainRank = 0;
 constexpr int kDefaultTag = 0;
 
