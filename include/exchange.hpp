@@ -8,6 +8,7 @@
 
 namespace gol {
 
+constexpr int b_th = 1;
 constexpr int kWidth = 6;
 constexpr int kHeight = 6;
 constexpr int kRows = 2;
@@ -41,7 +42,6 @@ void sendGenPartToThread(int thread_rank, const Generation& curr_gen,
     int num_rows = rows_range.second - rows_range.first + 1;
     int num_cols = cols_range.second - cols_range.first + 1;
     int count = num_rows * num_cols;
-    int b_th = 1;
 
     auto* cells_to_send = new bool[count];
     std::ostringstream ss;
@@ -56,7 +56,6 @@ void sendGenPartToThread(int thread_rank, const Generation& curr_gen,
 }
 void receiveGenPartFromMain(Generation& t_curr_gen) {
     int count = t_curr_gen.height * t_curr_gen.width;
-    int b_th = 1;
 
     auto* cells_to_receive = new bool[t_curr_gen.height * t_curr_gen.width];
     MPI_Recv(cells_to_receive, count, MPI_CXX_BOOL, kMainRank, kDefaultTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -73,7 +72,6 @@ void receiveGenPartFromMain(Generation& t_curr_gen) {
 
 void sendResultGenToMain(const Generation& t_next_gen) {
     int count = t_next_gen.height * t_next_gen.width;
-    int b_th = 1;
 
     auto* cells_to_send = new bool[count];
     int num_cols = t_next_gen.width - b_th * 2;
@@ -88,7 +86,6 @@ void sendResultGenToMain(const Generation& t_next_gen) {
 }
 void receiveResultGenFromThread(int thread_rank, Generation& t_next_gen) {
     int count = t_next_gen.height * t_next_gen.width;
-    int b_th = 1;
 
     auto* cells_to_receive = new bool[count];
     MPI_Recv(cells_to_receive, count, MPI_CXX_BOOL, thread_rank, kDefaultTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
