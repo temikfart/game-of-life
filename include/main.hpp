@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <mpi.h>
 #include <limits>
 #include <random>
@@ -12,17 +13,17 @@
 #include "exchange.hpp"
 #include "game_rules.hpp"
 #include "generation.hpp"
-#include "generation_saver.hpp"
+//#include "generation_saver.hpp"
 #include "printers.hpp"
 #include "utils.hpp"
 #include "validation.hpp"
-#include "window.hpp"
+//#include "window.hpp"
 
 namespace gol {
 
-constexpr int generations_num = 1'000;
+constexpr int generations_num = 100;
 
-Window window(kWidth, kHeight, kCellSize);
+//Window window(kWidth, kHeight, kCellSize);
 
 void calcRanges(int rank, std::pair<int, int>& rows_range, std::pair<int, int>& cols_range) {
     rows_range.first = height * (rank / kCols) + b_th;
@@ -73,14 +74,14 @@ void calcNextGen(const Generation& t_curr_gen, Generation& t_next_gen) {
         }
     }
 }
-void drawNextGen(const Generation& next_gen) {
-    for (int row = 0; row < kHeight; row++) {
-        for (int col = 0; col < kWidth; col++) {
-            if (next_gen.cell(row, col).alive) {
-                window.paintCell(col, row);
-            }
-        }
-    }
-}
+//void drawNextGen(const Generation& next_gen) {
+//    for (int row = 0; row < kHeight; row++) {
+//        for (int col = 0; col < kWidth; col++) {
+//            if (next_gen.cell(row, col).alive) {
+//                window.paintCell(col, row);
+//            }
+//        }
+//    }
+//}
 
 } // gol

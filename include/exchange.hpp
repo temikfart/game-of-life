@@ -9,8 +9,8 @@
 namespace gol {
 
 constexpr int b_th = 1;
-constexpr int kWidth = 6;
-constexpr int kHeight = 6;
+constexpr int kWidth = 3600;
+constexpr int kHeight = 3600;
 constexpr int kRows = 2;
 constexpr int kCols = 2;
 constexpr int width = kWidth / kCols;

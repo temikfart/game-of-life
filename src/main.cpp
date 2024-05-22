@@ -20,12 +20,14 @@ void run(/*int id,*/ int argc, char* argv[]) {
 
     if (rank == 0) {
         printGridSize(kHeight, kWidth);
-        printGeneration("Start generation:", curr_gen_);
+//        printGeneration("Start generation:", curr_gen_);
         std::cout << std::endl;
     }
 
     /** Calculate ranges for the thread */
     MPI_Barrier(MPI_COMM_WORLD);
+    double start_time = MPI_Wtime();
+
     // +2 to include the borders
     int t_gen_height = height + 2;
     int t_gen_width = width + 2;
@@ -103,9 +105,18 @@ void run(/*int id,*/ int argc, char* argv[]) {
         sendResultGenToMain(t_curr_gen);
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    double end_time = MPI_Wtime();
     if (rank == 0) {
-        printGeneration("Final generation:", final_gen_);
+        double total_time = end_time - start_time;
+        std::cout << std::setw(20) << std::left << "Total execution time: "
+                  << std::setprecision(6) << std::fixed << std::setw(10) << std::right
+                  << total_time << std::endl;
     }
+
+//    if (rank == 0) {
+//        printGeneration("Final generation:", final_gen_);
+//    }
 
     MPI_Finalize();
 //    GenerationSaver::saveFinalState(id, final_gen_);
