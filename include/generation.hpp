@@ -17,6 +17,17 @@ public:
             return alive;
         }
     };
+    struct Border {
+        int width, height;
+        Cell top_left, top_right, bottom_left, bottom_right;
+        std::vector<Cell> top, bottom, left, right;
+
+        explicit Border(int width, int height)
+            : width(width), height(height),
+              top_left(false), top_right(false), bottom_left(false), bottom_right(false),
+              top(width, Cell(false)), bottom(width, Cell(false)),
+              left(height, Cell(false)), right(height, Cell(false)) {}
+    };
 
     int height;
     int width;
@@ -43,6 +54,30 @@ public:
             }
         }
     }
+    Border getBorder() const {
+        int b_th = 1;
+        int b_w = width - b_th * 2;
+        int b_h = height - b_th * 2;
+        Generation::Border border(b_w, b_h);
+
+        border.top_left = cell(b_th, b_th);
+        border.top_right = cell(b_th, width - b_th * 2);
+        border.bottom_left = cell(height - b_th * 2, b_th);
+        border.bottom_right = cell(height - b_th * 2, width - b_th * 2);
+
+        int b_col = 0;
+        for (int col = b_th; col < width - b_th; ++col, ++b_col) {
+            border.top[b_col] = cell(b_th, col);
+            border.bottom[b_col] = cell(height - b_th - 1, col);
+        }
+        int b_row = 0;
+        for (int row = b_th; row < height - b_th; ++row, ++b_row) {
+            border.left[b_row] = cell(row, b_th);
+            border.right[b_row] = cell(row, width - b_th - 1);
+        }
+
+        return border;
+    }
 
 private:
     std::vector<std::vector<Cell>> gen_;
@@ -63,6 +98,30 @@ std::ostream& operator<<(std::ostream& os, const Generation& gen) {
 
 bool operator==(const Generation& lhs, const Generation& rhs) {
     return lhs.height == rhs.height && lhs.width == rhs.width && lhs.cells() == rhs.cells();
+}
+
+std::ostream& operator<<(std::ostream& os, const Generation::Border& border) {
+    os << border.top_left << " ";
+    for (const auto& cell : border.top) {
+        os << cell;
+    }
+    os << " " << border.top_right << "\n" << std::endl;
+
+    for (unsigned row = 0; row < border.left.size(); ++row) {
+        os << border.left[row];
+        os << std::string(border.width + 2, ' ');
+        os << border.right[row];
+        os << std::endl;
+    }
+    os << "\n";
+
+    os << border.bottom_left << " ";
+    for (const auto& cell : border.bottom) {
+        os << cell;
+    }
+    os << " " << border.bottom_right;
+
+    return os;
 }
 
 } // gol

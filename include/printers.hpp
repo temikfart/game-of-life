@@ -67,5 +67,11 @@ void printGenerationNumber(int num) {
     oss << "Generation #" << num;
     std::cout << oss.str() << std::endl;
 }
+void printBorder(int rank, const Generation::Border& t_border) {
+    std::ostringstream oss;
+    oss << "Thread " << rank << " border:" << std::endl;
+    oss << t_border << std::endl;
+    std::cout << oss.str() << std::endl;
+}
 
 } // gol
